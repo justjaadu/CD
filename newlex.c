@@ -23,8 +23,9 @@ int isKeyword(char *str) {
 }
 
 // Function to print token in a table format
-void printToken(int line, const char *lexeme, const char *type) {
-    printf("%-8d | %-15s | %-12s | %-10s\n", line, lexeme, type, lexeme);
+void printToken(int line, const char *lexeme, const char *type, const char *value) {
+    if (value == NULL) value = "null"; // If there's no value, print "null"
+    printf("%-8d | %-15s | %-12s | %-10s\n", line, lexeme, type, value);
 }
 
 // Function to perform lexical analysis
@@ -60,9 +61,9 @@ void analyze(FILE *fp) {
             ungetc(ch, fp);
 
             if (isKeyword(buffer))
-                printToken(line, buffer, "Keyword");
+                printToken(line, buffer, "Keyword", NULL);
             else
-                printToken(line, buffer, "Identifier");
+                printToken(line, buffer, "Identifier", NULL);
         }
 
         // Numbers (including integers and floats)
@@ -78,7 +79,8 @@ void analyze(FILE *fp) {
             buffer[i] = '\0';
             ungetc(ch, fp);
 
-            printToken(line, buffer, hasDot ? "Float" : "Integer");
+            // For floating-point numbers, print the value of the number
+            printToken(line, buffer, hasDot ? "Float" : "Integer", buffer);
         }
 
         // String literals
@@ -91,7 +93,7 @@ void analyze(FILE *fp) {
             }
             buffer[i++] = quote;
             buffer[i] = '\0';
-            printToken(line, buffer, "String");
+            printToken(line, buffer, "String", buffer);
         }
 
         // Single-line or multi-line comments
@@ -100,17 +102,17 @@ void analyze(FILE *fp) {
             if (ch == '/') {
                 while ((ch = fgetc(fp)) != '\n' && ch != EOF);
                 line++;
-                printToken(line, "//", "Comment");
+                printToken(line, "//", "Comment", NULL);
             } else if (ch == '*') {
                 while ((ch = fgetc(fp)) != EOF) {
                     if (ch == '\n') line++;
                     if (ch == '*' && fgetc(fp) == '/') break;
                 }
-                printToken(line, "/*...*/", "Comment");
+                printToken(line, "/*...*/", "Comment", NULL);
             } else {
                 ungetc(ch, fp);
                 buffer[0] = '/'; buffer[1] = '\0';
-                printToken(line, buffer, "Operator");
+                printToken(line, buffer, "Operator", NULL);
             }
         }
 
@@ -119,30 +121,30 @@ void analyze(FILE *fp) {
             if ((ch = fgetc(fp)) == '-') {
                 while ((ch = fgetc(fp)) != '\n' && ch != EOF);
                 line++;
-                printToken(line, "--", "SQL Comment");
+                printToken(line, "--", "SQL Comment", NULL);
             } else {
                 ungetc(ch, fp);
                 buffer[0] = '-'; buffer[1] = '\0';
-                printToken(line, buffer, "Operator");
+                printToken(line, buffer, "Operator", NULL);
             }
         }
 
         // Operators
         else if (strchr("=+*<>!%", ch)) {
             buffer[0] = ch; buffer[1] = '\0';
-            printToken(line, buffer, "Operator");
+            printToken(line, buffer, "Operator", NULL);
         }
 
         // Symbols
         else if (strchr("(){}[],.;", ch)) {
             buffer[0] = ch; buffer[1] = '\0';
-            printToken(line, buffer, "Symbol");
+            printToken(line, buffer, "Symbol", NULL);
         }
 
         // Unknown characters
         else {
             buffer[0] = ch; buffer[1] = '\0';
-            printToken(line, buffer, "Unknown");
+            printToken(line, buffer, "Unknown", NULL);
         }
     }
 }
